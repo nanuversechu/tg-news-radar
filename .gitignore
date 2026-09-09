@@ -1,0 +1,16 @@
+# The database is local state, not source: it is large, it grows, and it holds
+# scraped headlines. Every machine builds its own within a couple of ticks.
+radar.db
+radar.db-wal
+radar.db-shm
+
+__pycache__/
+*.py[cod]
+
+# Scratch files from probing feeds by hand
+*.xml
+*.html
+!radar/**/*.html
+
+# The published snapshot is source, not scratch
+!docs/index.html

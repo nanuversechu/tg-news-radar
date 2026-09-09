@@ -1,0 +1,37 @@
+[Unit]
+Description=Telangana news radar
+Documentation=file://%h/tg-news-radar/README.md
+# The poller already survives a dead network on its own (a failed fetch is
+# skipped and retried next tick), so we do not block startup waiting for it.
+After=network.target
+
+[Service]
+# The poller heartbeats to systemd every 30 s (radar/watchdog.py). If it stops
+# — a hung fetch, a deadlock — systemd restarts the service instead of leaving
+# a live-looking process that has quietly stopped polling.
+Type=notify
+WatchdogSec=600
+NotifyAccess=main
+WorkingDirectory=%h/tg-news-radar
+ExecStart=/usr/bin/python3 -m radar
+Environment=PYTHONUNBUFFERED=1
+Environment=RADAR_CONTACT=you@example.com
+# Offset from the Andhra radar so the two do not poll Google in lockstep.
+Environment=RADAR_START_DELAY=150
+
+# Optional extras — uncomment and fill in, then: systemctl --user restart tg-radar
+# Environment=GROQ_API_KEY=gsk_...
+# Environment=RADAR_TELEGRAM_TOKEN=123456:ABC...
+# Environment=RADAR_TELEGRAM_CHAT=-1001234567890
+
+Restart=always
+RestartSec=15
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tg-radar
+
+[Install]
+WantedBy=default.target

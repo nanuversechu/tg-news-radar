@@ -10,7 +10,10 @@ __pycache__/
 # Scratch files from probing feeds by hand
 *.xml
 *.html
-!radar/**/*.html
+
+# The published snapshot is generated output. It lives on the gh-pages branch,
+# force-pushed as a single commit, so main never accumulates 300 KB a quarter-hour.
+docs/
 
 # The published snapshot is source, not scratch
 !docs/index.html

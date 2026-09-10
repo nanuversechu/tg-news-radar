@@ -17,6 +17,18 @@ cd "$(dirname "$0")"
 
 PAGE=docs/index.html
 
+# The key that locks the published page. systemd supplies it; a hand run picks
+# it up from .radar-key (gitignored, chmod 600). Publishing without one would
+# put the whole board on the open web, so refuse rather than guess.
+if [ -z "${RADAR_PAGE_KEY:-}" ] && [ -r .radar-key ]; then
+  RADAR_PAGE_KEY=$(tr -d '\r\n' < .radar-key)
+  export RADAR_PAGE_KEY
+fi
+if [ -z "${RADAR_PAGE_KEY:-}" ]; then
+  echo "publish: no RADAR_PAGE_KEY and no .radar-key file — refusing to publish an unlocked board" >&2
+  exit 1
+fi
+
 # 1. Ask the running radar for the current board. Fails loudly if it is down.
 python3 -m radar snapshot
 
@@ -25,7 +37,14 @@ if [ ! -s "$PAGE" ] || [ "$(stat -c%s "$PAGE")" -lt 20000 ]; then
   echo "publish: $PAGE is missing or implausibly small — not publishing" >&2
   exit 1
 fi
-grep -q "SNAPSHOT_TAKEN" "$PAGE" || { echo "publish: page is not a snapshot — not publishing" >&2; exit 1; }
+# Either a plain snapshot, or the unlock form wrapping the ciphertext.
+grep -qE "SNAPSHOT_TAKEN|crypto.subtle" "$PAGE" \
+  || { echo "publish: page is neither a snapshot nor a locked page — not publishing" >&2; exit 1; }
+# With a key set, the board must NOT be readable in the published file.
+if [ -n "${RADAR_PAGE_KEY:-}" ] && grep -q "SNAPSHOT_TAKEN" "$PAGE"; then
+  echo "publish: a key is set but the page is not encrypted — refusing to publish" >&2
+  exit 1
+fi
 
 # 2. Build the branch with plumbing, so the working tree is never touched and
 #    a half-finished publish cannot leave the repo on another branch.

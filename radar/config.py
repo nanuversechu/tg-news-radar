@@ -49,6 +49,10 @@ COOLDOWN_5XX = 5 * 60
 # Omarchy — the dashboard reads the live desktop theme from here.
 # --------------------------------------------------------------------------
 
+# "neon" is the curated palette in theme.py; "omarchy" follows the desktop
+# theme's own colours instead. Either way the light/dark mode follows Omarchy.
+PALETTE = os.environ.get("RADAR_PALETTE", "neon")
+
 OMARCHY_STATE_DIR = os.environ.get(
     "OMARCHY_STATE", os.path.expanduser("~/.local/state/omarchy/current"))
 OMARCHY_THEME_DIR = os.path.join(OMARCHY_STATE_DIR, "theme")
@@ -534,6 +538,11 @@ ALERT_COOLDOWN_MIN = 90  # do not re-alert the same cluster within this window
 # --------------------------------------------------------------------------
 # Optional extras (all off unless you set the env var)
 # --------------------------------------------------------------------------
+
+# The key that unlocks the *published* page. Set in the publish service unit,
+# never in this file — anything here is on GitHub. Empty means publish in the
+# clear. The local board on 127.0.0.1 is never locked: it is already private.
+PAGE_KEY = os.environ.get("RADAR_PAGE_KEY", "").strip()
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")

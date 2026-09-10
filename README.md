@@ -13,20 +13,44 @@ one is a file copy away from the other.
 
 ## See it without installing anything
 
-**<https://nanuversechu.github.io/tg-news-radar/>** — a copy of the live
-dashboard, exactly as the desk sees it. **It refreshes itself every 15
-minutes**, so the link is current without anyone touching it; the time it was
-taken is in the top bar. Every link opens the real article.
+**<https://nanuversechu.github.io/tg-news-radar/>** — the board as the desk sees
+it. **It is private:** the page is encrypted, and asks for a key before it
+shows anything. It **republishes itself every 15 minutes**, so the link stays
+current without anyone touching it.
 
-Allowing for GitHub's ten-minute CDN cache, a visitor sees a board at most
-about twenty-five minutes old.
+### How the lock works
 
-The refresh is a systemd timer, `tg-radar-publish.timer`, running
-[`publish.sh`](publish.sh). It only publishes when the radar answered and
+GitHub Pages is a static host — there is no server to check a password
+against, and a page that merely *asks* for one while carrying the content in
+its HTML protects nothing. So the board is genuinely encrypted:
+**AES-256-GCM**, with the key derived in the reader's browser by PBKDF2-SHA256
+over 250,000 iterations. What GitHub serves is an unlock form and a block of
+ciphertext. `curl` on the URL returns ciphertext. A wrong key fails the GCM
+authentication tag and yields nothing.
+
+The key lives in the publish service unit and in `.radar-key` — both outside
+the repository, both `chmod 600`. `publish.sh` refuses to run without one, so
+the board cannot reach the open web by accident. A reader's key is remembered
+for their browser tab; a link of the form `…/#k=THE-KEY` opens straight in,
+and the fragment is never sent to any server.
+
+Honest limits: this protects against anyone who does not have the key, not
+against someone who has it, and not against an attacker willing to grind
+guesses offline against the downloaded file — which is why the key is 79 bits
+of randomness rather than a word. To change it, edit `.radar-key` and the
+`Environment=RADAR_PAGE_KEY=` line in the publish unit, then run
+`./publish.sh`.
+
+Allowing for GitHub's ten-minute CDN cache, a reader sees a board at most
+about twenty-five minutes old. The refresh is a systemd timer running
+[`publish.sh`](publish.sh); it only publishes when the radar answered and
 produced a real page, so a stopped radar leaves the last good snapshot up
 rather than replacing it with an error. The page is force-pushed to a
 single-commit `gh-pages` branch, so the repository stays the size of one
 snapshot however often it refreshes.
+
+`publish.sh` needs `python-cryptography` for the encryption step (already on
+Arch). The radar itself still needs nothing but the standard library.
 
 ```bash
 ./publish.sh          # publish immediately, by hand
@@ -66,10 +90,13 @@ journalctl --user -u tg-radar -n 50
 
 ## The look
 
-It wears your Omarchy theme, exactly as the Andhra board does — the server
-reads `~/.local/state/omarchy/current/theme/colors.toml` on every refresh, so
-`omarchy theme set …` restyles both within thirty seconds. Square corners,
-JetBrainsMono Nerd Font, meters drawn in block characters.
+Square corners, JetBrainsMono Nerd Font, meters drawn in block characters —
+identical to the Andhra board.
+
+The palette is **Neon Noir**: a violet-black ground, pink for the brand and the
+loudest scores, mint for rising, coral for fading, near-white for anything you
+actually read. Light or dark follows your desktop; the status bar names your
+Omarchy theme. `RADAR_PALETTE=omarchy` follows the desktop's own colours.
 
 Direction is never colour alone: **▲ up · ▼ down · ● new · → flat**.
 

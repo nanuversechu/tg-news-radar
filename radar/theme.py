@@ -19,6 +19,37 @@ from functools import lru_cache
 
 from . import config
 
+# --------------------------------------------------------------------------
+# "Neon noir" — the default. A violet-black ground rather than pure black,
+# because saturated colour on #000 haloes and tires the eye within minutes;
+# the accents are vivid but pulled just off full saturation for the same
+# reason. Pink carries the brand and the hottest scores, mint means rising,
+# coral means fading, cyan and amber fill the middle.
+#
+# Only accents are loud. Body text stays near-white: neon is for the handful
+# of glyphs that must catch the eye across a room, never for reading.
+# --------------------------------------------------------------------------
+
+NEON_DARK = {
+    "mode": "dark", "name": "Neon Noir",
+    "background": "#0e0b16", "lighter_background": "#191330",
+    "dark_background": "#0a0812", "selection": "#241b3f",
+    "foreground": "#ece9f5", "muted": "#a79dc8",
+    "accent": "#ff4d9b",                       # neon pink
+    "red": "#ff6b81", "yellow": "#ffc247", "orange": "#ff9457",
+    "green": "#3ee6a5", "cyan": "#4cc9f0", "blue": "#7aa2ff", "magenta": "#c792ea",
+}
+
+NEON_LIGHT = {
+    "mode": "light", "name": "Neon Day",
+    "background": "#faf7fb", "lighter_background": "#f1eaf6",
+    "dark_background": "#ffffff", "selection": "#ece2f5",
+    "foreground": "#241c33", "muted": "#6b6383",
+    "accent": "#d81b74",
+    "red": "#d92d4b", "yellow": "#a86a00", "orange": "#b4531a",
+    "green": "#0b8f5f", "cyan": "#0e7490", "blue": "#3b5bdb", "magenta": "#8e44ad",
+}
+
 # Rose Pine, used when there is no Omarchy theme to read.
 FALLBACK = {
     "mode": "dark", "name": "Rose Pine",
@@ -154,6 +185,19 @@ def ensure_contrast(colour: str, against: str, minimum: float = 4.5) -> str:
 # Reading Omarchy
 # --------------------------------------------------------------------------
 
+def _palette_choice() -> dict | None:
+    """The curated palette, unless config asks to follow Omarchy instead."""
+    if config.PALETTE == "omarchy":
+        return None
+    mode = "light"
+    try:  # follow the desktop's light/dark even when using our own colours
+        with open(os.path.join(config.OMARCHY_THEME_DIR, "colors.toml"), "rb") as fh:
+            mode = "dark" if b'mode = "dark"' in fh.read() else "light"
+    except OSError:
+        mode = "dark"
+    return dict(NEON_DARK if mode == "dark" else NEON_LIGHT)
+
+
 def _read_omarchy() -> dict | None:
     path = os.path.join(config.OMARCHY_THEME_DIR, "colors.toml")
     try:
@@ -183,8 +227,18 @@ def _stat_key() -> float:
 
 @lru_cache(maxsize=4)
 def _build(_mtime: float) -> dict:
-    raw = _read_omarchy()
-    source = "omarchy" if raw else "fallback"
+    raw = _palette_choice()
+    source = "neon"
+    if raw is None:
+        raw = _read_omarchy()
+        source = "omarchy" if raw else "fallback"
+    palette_name = raw.get("name", "")
+    if source == "neon":
+        # Keep showing the desktop theme's name in the status bar: that is what
+        # the user asked to see there, and the palette is our own decision.
+        desktop = _read_omarchy()
+        if desktop and desktop.get("name"):
+            raw["name"] = desktop["name"]
     pal = dict(FALLBACK)
     if raw:
         pal.update(raw)
@@ -216,6 +270,7 @@ def _build(_mtime: float) -> dict:
         roles["line"] = ensure_contrast(roles["line"], bg, 1.6)
 
     return {
+        "palette": palette_name,
         "source": source,
         "name": pal.get("name", "Rose Pine"),
         "mode": pal.get("mode", "dark"),

@@ -17,3 +17,6 @@ docs/
 
 # The published snapshot is source, not scratch
 !docs/index.html
+
+# The key that unlocks the published page. Never commit this.
+.radar-key

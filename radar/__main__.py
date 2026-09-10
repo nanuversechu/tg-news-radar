@@ -144,12 +144,17 @@ render();
 clearInterval(countdownTimer);
 document.getElementById('s-live').className='seg';
 document.getElementById('s-live').textContent='snapshot';
-document.getElementById('s-next').textContent='taken '+SNAPSHOT_TAKEN;
-document.getElementById('notices').innerHTML=
-  '<div class="notice">A copy of the live dashboard, taken '+SNAPSHOT_TAKEN+
-  '. It republishes itself every 15 minutes, so reload for a newer board; the page itself does not move while open. '+
-  'Every link opens the real article.</div>';"""
+document.getElementById('s-next').textContent='taken '+SNAPSHOT_TAKEN;"""
     page = page[:start] + static + page[end:]
+
+    # With a key set, what gets written is the unlock form plus ciphertext —
+    # the board itself never reaches the file. Without one it is written plain,
+    # which is right for a page you are only ever going to open yourself.
+    locked = ""
+    if config.PAGE_KEY:
+        from . import lock
+        page = lock.gate_page(page, config.PAGE_KEY, config.REGION_SLUG)
+        locked = ", encrypted"
 
     out_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs")
     os.makedirs(out_dir, exist_ok=True)
@@ -157,7 +162,7 @@ document.getElementById('notices').innerHTML=
     with open(out, "w", encoding="utf-8") as fh:
         fh.write(page)
     open(os.path.join(out_dir, ".nojekyll"), "w").close()
-    print(f"wrote {out}  ({os.path.getsize(out) // 1024} KB, taken {taken})")
+    print(f"wrote {out}  ({os.path.getsize(out) // 1024} KB, taken {taken}{locked})")
 
 
 if __name__ == "__main__":

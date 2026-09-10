@@ -146,8 +146,9 @@ document.getElementById('s-live').className='seg';
 document.getElementById('s-live').textContent='snapshot';
 document.getElementById('s-next').textContent='taken '+SNAPSHOT_TAKEN;
 document.getElementById('notices').innerHTML=
-  '<div class="notice">This is a frozen copy of the live dashboard, taken '+SNAPSHOT_TAKEN+
-  '. On the desk it refreshes itself every five minutes; here nothing moves. Every link opens the real article.</div>';"""
+  '<div class="notice">A copy of the live dashboard, taken '+SNAPSHOT_TAKEN+
+  '. It republishes itself every 15 minutes, so reload for a newer board; the page itself does not move while open. '+
+  'Every link opens the real article.</div>';"""
     page = page[:start] + static + page[end:]
 
     out_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs")

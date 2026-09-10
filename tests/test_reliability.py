@@ -2,8 +2,9 @@
 
     python3 tests/test_reliability.py
 
-Theme contrast, freshness gating, beat labelling, direction arrows — the logic
-that decides what a desk sees and whether it can be read.
+Theme contrast, freshness gating, front-page prominence, trend coverage and
+direction arrows — the logic that decides what a desk sees, and whether it can
+be read.
 """
 
 from __future__ import annotations
@@ -33,13 +34,29 @@ def check(cond: bool, label: str) -> None:
 
 
 # --- theme: every text role must read against the background ---------------
+def _roles_readable(t, label):
+    for role, colour in t["roles"].items():
+        if role in theme.SURFACE_ROLES or role in ("line", "on_accent"):
+            continue
+        check(theme.contrast(colour, t["roles"]["bg"]) >= 4.5,
+              f"{label}: role {role} {colour} contrast >= 4.5")
+    check(theme.contrast(t["roles"]["on_accent"], t["roles"]["accent"]) >= 3.0,
+          f"{label}: on_accent readable on accent")
+
+# The curated palette is the default and does not depend on Omarchy at all.
 t = theme.current()
-check(t["source"] == "fallback", "no omarchy dir -> fallback palette")
-for role, colour in t["roles"].items():
-    if role in theme.SURFACE_ROLES or role in ("line", "on_accent"):
-        continue
-    check(theme.contrast(colour, t["roles"]["bg"]) >= 4.5, f"role {role} {colour} contrast >= 4.5")
-check(theme.contrast(t["roles"]["on_accent"], t["roles"]["accent"]) >= 3.0, "on_accent readable on accent")
+check(t["source"] == "neon", "default palette is the curated one")
+check(t["palette"] in ("Neon Noir", "Neon Day"), "curated palette is named")
+_roles_readable(t, "neon")
+
+# Following the desktop instead, with no desktop present, must still be legible.
+config.PALETTE = "omarchy"
+theme._build.cache_clear()
+t_om = theme.current()
+check(t_om["source"] == "fallback", "omarchy palette with no omarchy dir -> fallback")
+_roles_readable(t_om, "fallback")
+config.PALETTE = "neon"
+theme._build.cache_clear()
 
 # A muddy generated palette: dim olive on near-black must be lifted, not left.
 lifted = theme.ensure_contrast("#67696f", "#010419")
@@ -180,6 +197,6 @@ names = {r["name"] for r in store.source_health()}
 check("Fresh" in names and "NeverFailed" in names, "recent sources survive housekeeping (even with a NULL last_fail)")
 check("Retired" not in names, "a source untouched for three days is retired")
 
-total = 58
+total = 61
 print(f"{total - failures}/{total} passed")
 sys.exit(1 if failures else 0)

@@ -232,7 +232,9 @@ def _build(_mtime: float) -> dict:
     if raw is None:
         raw = _read_omarchy()
         source = "omarchy" if raw else "fallback"
-    palette_name = raw.get("name", "")
+    # raw is None when following Omarchy on a machine that has none; the
+    # fallback palette is filled in below, so nothing may assume a dict here.
+    palette_name = raw.get("name", "") if raw else ""
     if source == "neon":
         # Keep showing the desktop theme's name in the status bar: that is what
         # the user asked to see there, and the palette is our own decision.

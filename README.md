@@ -11,6 +11,29 @@ This is the twin of the [Andhra Pradesh radar](../ap-news-radar). Every file in
 `radar/` is byte-identical between the two; only `config.py` differs. A fix in
 one is a file copy away from the other.
 
+## See it without installing anything
+
+**<https://nanuversechu.github.io/tg-news-radar/>** — a copy of the live
+dashboard, exactly as the desk sees it. **It refreshes itself every 15
+minutes**, so the link is current without anyone touching it; the time it was
+taken is in the top bar. Every link opens the real article.
+
+Allowing for GitHub's ten-minute CDN cache, a visitor sees a board at most
+about twenty-five minutes old.
+
+The refresh is a systemd timer, `tg-radar-publish.timer`, running
+[`publish.sh`](publish.sh). It only publishes when the radar answered and
+produced a real page, so a stopped radar leaves the last good snapshot up
+rather than replacing it with an error. The page is force-pushed to a
+single-commit `gh-pages` branch, so the repository stays the size of one
+snapshot however often it refreshes.
+
+```bash
+./publish.sh          # publish immediately, by hand
+```
+
+The Andhra Pradesh twin is at <https://nanuversechu.github.io/ap-news-radar/>.
+
 ## Bookmark this
 
 **<http://127.0.0.1:8788>** — the Telangana board.
@@ -198,7 +221,8 @@ python3 -m radar snapshot
 ```
 
 Freezes the live board into `docs/index.html`, a single self-contained page for
-showing someone who will not run it.
+showing someone who will not run it. `./publish.sh` does that and pushes it to
+GitHub Pages; the timer runs it every 15 minutes.
 
 ## Data
 
